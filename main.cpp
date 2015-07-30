@@ -32,13 +32,25 @@ std::vector<std::string> split(const std::string& s, char delimiter = ' ') {
 int main()
 {
 
-	srand(time(NULL));
+	std::cout << "Enter a seed for the random number generator.\n";
+	std::uint32_t seed;
+	std::cin >> seed;
+
+	srand(seed);
 
 	std::mt19937 gen(rand());
 
-	std::cout << "Enter the number of characters to keep track of while training (longer is better quality, but shorter is higher quantity).\n";
+	std::cout << "\nEnter the number of characters to keep track of while training (longer is better quality, but shorter is higher quantity).\n";
 	size_t len;
 	std::cin >> len;
+
+	std::cout << "\nEnter the minimum name length you'd want.\n";
+	size_t minLength;
+	std::cin >> minLength;
+
+	std::cout << "\nEnter the maximum name length you'd want.\n";
+	size_t maxLength;
+	std::cin >> maxLength;
 
 	MarkovChain<char> wordGenerator{len};
 
@@ -67,7 +79,7 @@ int main()
 	std::vector<std::vector<char>> trainingData;
 
 	std::ifstream fileInput;
-	fileInput.open("./src/planet names (original).txt");
+	fileInput.open("./src/planet names.txt");
 
 	if(!fileInput) {
 		std::cerr << "Error opening training data.\n";
@@ -109,84 +121,91 @@ int main()
 
 	while(generatedNames.size() != n) {
 
-		MarkovSequence<char> sequence{};
+		MarkovSequence<char> sequence = wordGenerator.GenerateSequence();
 
-		size_t previousSize = -1;
+		if(capitals.find(sequence[0]) == capitals.end()) {
+			sequence = MarkovSequence<char>{};
+			std::cout << "\tREJECTED: NOT CAPITALIZED\n";
+			continue;
+		}
 
-		while(sequence.size() != previousSize) {
-			previousSize = sequence.size();
-			wordGenerator.AdvanceSequence(sequence);
+		if(sequence.size() < minLength) {
+			std::cout << "\tREJECTED: TOO SHORT\n";
+			continue;
+		}
 
-			if(capitals.find(sequence[0]) == capitals.end()) {
-				sequence = MarkovSequence<char>{};
-				previousSize = -1;
-				std::cout << "\tREJECTED: NOT CAPITALIZED\n";
-			}
+		if(sequence.size() > maxLength) {
+			std::cout << "\tREJECTED: TOO LONG\n";
+			continue;
+		}
 
-			if(sequence.size() >= 3) {
-				char c = sequence[0];
-				size_t sameCount = 1;
-				size_t consonantCount = 0;
-				size_t lastConsonant = 0;
-				size_t capitalCount = 0;
-				size_t lastCapital = 0;
+		if(sequence.size() >= 3) {
+			char c = sequence[0];
+			size_t sameCount = 1;
+			size_t consonantCount = 0;
+			size_t lastConsonant = 0;
+			size_t capitalCount = 0;
+			size_t lastCapital = 0;
 
-				for(size_t i = 0; i < sequence.size(); i++) {
+			for(size_t i = 0; i < sequence.size(); i++) {
 
-					if(lowerCase.find(sequence[i]) != lowerCase.end() && sequence[i-1] == ' ') {
-						sequence = MarkovSequence<char>{};
-						previousSize = -1;
-						std::cout << "\tREJECTED: OUT OF PLACE LOWER CASE\n";
-					}
+				if(lowerCase.find(sequence[i]) != lowerCase.end() && sequence[i-1] == ' ') {
+					std::cout << "\tREJECTED: OUT OF PLACE LOWER CASE\n";
+					sequence = MarkovSequence<char>{};
+				}
 
-					if(capitals.find(sequence[i]) != capitals.end()) {
-						if(lastCapital == i-1) {
-							++capitalCount;
-						} else {
-							capitalCount = 0;
-						}
-						lastCapital = i;
-					}
-
-					if(consonants.find(sequence[i]) != consonants.end()) {
-
-						if(lastConsonant == i-1) {
-							++consonantCount;
-						} else {
-							consonantCount = 0;
-						}
-
-						lastConsonant = i;
-
-					}
-
-					if(c != sequence[i]) {
-						c = sequence[i];
-						sameCount = 1;
+				if(capitals.find(sequence[i]) != capitals.end()) {
+					if(lastCapital == i-1) {
+						++capitalCount;
 					} else {
-						++sameCount;
+						capitalCount = 0;
 					}
+					lastCapital = i;
 
-					if(capitalCount > 2) {
+					if(lowerCase.find(sequence[i-1]) != lowerCase.end()) {
+						std::cout << "\tREJECTED: OUT OF PLACE CAPITAL\n";
 						sequence = MarkovSequence<char>{};
-						previousSize = -1;
-						std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CAPITALS\n";
-					}
-
-					if(consonantCount >= 3) {
-						sequence = MarkovSequence<char>{};
-						previousSize = -1;
-						std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CONSONANTS\n";
-					}
-
-					if(sameCount >= 3) {
-						sequence = MarkovSequence<char>{};
-						previousSize = -1;
-						std::cout << "\tREJECTED: TOO MANY REPEATED LETTERS\n";
 					}
 				}
-			}
 
+				if(consonants.find(sequence[i]) != consonants.end()) {
+
+					if(lastConsonant == i-1) {
+						++consonantCount;
+					} else {
+						consonantCount = 0;
+					}
+
+					lastConsonant = i;
+
+				}
+
+				if(c != sequence[i]) {
+					c = sequence[i];
+					sameCount = 1;
+				} else {
+					++sameCount;
+				}
+
+				if(capitalCount >= 1) {
+					std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CAPITALS\n";
+					sequence = MarkovSequence<char>{};
+				}
+
+				if(consonantCount >= 3) {
+					std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CONSONANTS\n";
+					sequence = MarkovSequence<char>{};
+				}
+
+				if(sameCount >= 3) {
+					std::cout << "\tREJECTED: TOO MANY REPEATED LETTERS\n";
+					sequence = MarkovSequence<char>{};
+				}
+			}
+		}
+
+		if(sequence.size() == 0) {
+			continue;
 		}
 
 		std::string constructedName = "";

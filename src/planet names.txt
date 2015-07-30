@@ -326,7 +326,6 @@ Camus II
 Carinae Delta V
 Canopus III
 Canopus Major
-Canopus Planet
 Capella IV
 Cardassia Prime
 Cardassia I
@@ -475,7 +474,6 @@ Harrakis V
 H'atoria
 Haven
 Hekaras II
-Planet Hell
 Hemikek IV
 Heva VII
 Hispaniola Minor

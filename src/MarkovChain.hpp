@@ -55,7 +55,7 @@ template<typename State> std::random_device MarkovChain<State>::rd;
 
 template<typename State> std::mt19937 MarkovChain<State>::generator(rd());
 
-template<typename State> std::uniform_real_distribution<float> MarkovChain<State>::sampler(0.0f, 100.0f);
+template<typename State> std::uniform_real_distribution<float> MarkovChain<State>::sampler(0.0f, 1000.0f);
 
 
 template<typename State>
@@ -223,16 +223,13 @@ MarkovSequence<State> MarkovChain<State>::GenerateSequence(MarkovSequence<State>
 
 template<typename State>
 void MarkovChain<State>::AdvanceSequence(MarkovSequence<State>& ms) {
-	size_t start = 0;
-
-	if(ms.size() > chainLength) {
-		start = ms.size() - chainLength;
-	}
 
 	Node* n = root;
 
-	for(size_t index = start; n && index < ms.size(); index++) {
-		n = n->GetChild(ms[index]);
+	for(size_t i = 0; i < ms.size(); i++) {
+		if(n) {
+			n = n->GetChild(ms[i]);
+		}
 	}
 
 	if(n) {
@@ -300,7 +297,7 @@ void MarkovChain<State>::Node::CalculateProbabilities() {
 	}
 
 	for(auto& p : nextProbabilities) {
-		p.second = 100.0f * (p.second / total);
+		p.second = 1000.0f * (p.second / total);
 	}
 
 	for(auto& p : children) {
