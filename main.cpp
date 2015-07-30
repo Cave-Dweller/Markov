@@ -36,26 +36,38 @@ int main()
 
 	std::mt19937 gen(rand());
 
-	std::cout << "Enter the number of characters in a chain.\n";
+	std::cout << "Enter the number of characters to keep track of while training (longer is better quality, but shorter is higher quantity).\n";
 	size_t len;
 	std::cin >> len;
 
 	MarkovChain<char> wordGenerator{len};
-	//MarkovTrie<char> wordGenerator;
 
 	std::set<char> capitals = {'A', 'B', 'C', 'D', 'E', 'F', 'G',
 	                           'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
 	                           'Q', 'R', 'S',
 	                           'T', 'U', 'V',
-	                           'W', 'X', 'Y',
+	                           'W', 'X',
+	                           'Y',
 	                           'Z'};
+
+	std::set<char> lowerCase = {'a', 'b', 'c', 'd', 'e', 'f', 'g',
+	                            'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
+	                            'q', 'r', 's',
+	                            't', 'u', 'v',
+	                            'w', 'x',
+	                            'y',
+	                            'z'};
+
+	std::set<char> consonants = {'b', 'c', 'd', 'f', 'g', 'h', 'j',
+	                             'k', 'l', 'm', 'n', 'p', 'q', 'r',
+	                             's', 't', 'v', 'w', 'x', 'z'};
 
 	std::set<std::string> names;
 
 	std::vector<std::vector<char>> trainingData;
 
 	std::ifstream fileInput;
-	fileInput.open("./src/planet names.txt");
+	fileInput.open("./src/planet names (original).txt");
 
 	if(!fileInput) {
 		std::cerr << "Error opening training data.\n";
@@ -111,6 +123,70 @@ int main()
 				std::cout << "\tREJECTED: NOT CAPITALIZED\n";
 			}
 
+			if(sequence.size() >= 3) {
+				char c = sequence[0];
+				size_t sameCount = 1;
+				size_t consonantCount = 0;
+				size_t lastConsonant = 0;
+				size_t capitalCount = 0;
+				size_t lastCapital = 0;
+
+				for(size_t i = 0; i < sequence.size(); i++) {
+
+					if(lowerCase.find(sequence[i]) != lowerCase.end() && sequence[i-1] == ' ') {
+						sequence = MarkovSequence<char>{};
+						previousSize = -1;
+						std::cout << "\tREJECTED: OUT OF PLACE LOWER CASE\n";
+					}
+
+					if(capitals.find(sequence[i]) != capitals.end()) {
+						if(lastCapital == i-1) {
+							++capitalCount;
+						} else {
+							capitalCount = 0;
+						}
+						lastCapital = i;
+					}
+
+					if(consonants.find(sequence[i]) != consonants.end()) {
+
+						if(lastConsonant == i-1) {
+							++consonantCount;
+						} else {
+							consonantCount = 0;
+						}
+
+						lastConsonant = i;
+
+					}
+
+					if(c != sequence[i]) {
+						c = sequence[i];
+						sameCount = 1;
+					} else {
+						++sameCount;
+					}
+
+					if(capitalCount > 2) {
+						sequence = MarkovSequence<char>{};
+						previousSize = -1;
+						std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CAPITALS\n";
+					}
+
+					if(consonantCount >= 3) {
+						sequence = MarkovSequence<char>{};
+						previousSize = -1;
+						std::cout << "\tREJECTED: TOO MANY CONSECUTIVE CONSONANTS\n";
+					}
+
+					if(sameCount >= 3) {
+						sequence = MarkovSequence<char>{};
+						previousSize = -1;
+						std::cout << "\tREJECTED: TOO MANY REPEATED LETTERS\n";
+					}
+				}
+			}
+
 		}
 
 		std::string constructedName = "";
@@ -136,7 +212,8 @@ int main()
 
 	std::cout << "\n\n";
 
-	std::fstream outFile("generated names.txt", std::ios::trunc | std::ios::out);
+	std::fstream outFile("./generated names.txt", std::ios::trunc | std::ios::out);
+	outFile << "\n";
 
 	for(auto& planetName : generatedNames) {
 		std::cout << planetName << "\n";

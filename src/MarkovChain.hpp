@@ -183,6 +183,7 @@ MarkovSequence<State> MarkovChain<State>::GenerateSequence() {
 template<typename State>
 MarkovSequence<State> MarkovChain<State>::GenerateSequence(State seedValue) {
 	MarkovSequence<State> ms;
+	ms.Append(seedValue);
 
 	Node* n = root->GetChild(seedValue);
 
